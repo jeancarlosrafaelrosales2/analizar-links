@@ -10,9 +10,8 @@
 #   6. worker   — Worker target (future)
 # ─────────────────────────────────────────────────────────────
 
-# ── Stage 1: Chef (dependency caching) ──
-FROM rust:1.83-slim-bookworm AS chef
-RUN cargo install cargo-chef
+# ── Stage 1: Chef (pre-built image — no compile needed) ──
+FROM lukemathwalker/cargo-chef:latest-rust-1.83-slim-bookworm AS chef
 WORKDIR /app
 
 # ── Stage 2: Planner ──
@@ -29,8 +28,8 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release --bin analizar-links
 
-# ── Stage 4: Runtime base ──
-FROM debian:bookworm-slim AS runtime-base
+# ── Stage 4: Runtime ──
+FROM debian:bookworm-slim AS api
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -39,25 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     && pip3 install --break-system-packages yt-dlp \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /data/audio
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
-WORKDIR /app
-
-# Create storage directory
-RUN mkdir -p /data/audio && chown -R appuser:appuser /data
-
-# ── Stage 5: API Server ──
-FROM runtime-base AS api
 COPY --from=builder /app/target/release/analizar-links /usr/local/bin/analizar-links
-USER appuser
 EXPOSE 3000
 CMD ["analizar-links"]
-
-# ── Stage 6: Worker (reuses same binary with --worker flag, future) ──
-FROM runtime-base AS worker
-COPY --from=builder /app/target/release/analizar-links /usr/local/bin/analizar-links
-USER appuser
-# Worker mode will be activated via env var or flag
-CMD ["analizar-links", "--worker"]
