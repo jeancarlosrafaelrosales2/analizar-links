@@ -10,25 +10,24 @@
 #   6. worker   — Worker target (future)
 # ─────────────────────────────────────────────────────────────
 
-# ── Stage 1: Chef (pre-built image — no compile needed) ──
-FROM lukemathwalker/cargo-chef:latest-rust-1.83-slim-bookworm AS chef
+# ── Stage 1: Builder ──
+FROM rust:1.83-slim-bookworm AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config libssl-dev ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# ── Stage 2: Planner ──
-FROM chef AS planner
-COPY . .
-RUN cargo chef prepare --recipe-path recipe.json
+# Cache dependencies layer (faster rebuilds)
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir -p src && echo "fn main(){}" > src/main.rs && \
+    cargo build --release 2>&1 && \
+    rm -f target/release/deps/analizar_links* target/release/analizar-links
 
-# ── Stage 3: Builder ──
-FROM chef AS builder
-COPY --from=planner /app/recipe.json recipe.json
-# Build dependencies (cached layer)
-RUN cargo chef cook --release --recipe-path recipe.json
-# Build application
-COPY . .
+# Build the real binary
+COPY src ./src
 RUN cargo build --release --bin analizar-links
 
-# ── Stage 4: Runtime ──
+# ── Stage 2: Runtime ──
 FROM debian:bookworm-slim AS api
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
