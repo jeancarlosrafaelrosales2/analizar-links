@@ -1,2 +1,0 @@
-fn(axum::extract::State<Arc<AppState>>, axum::http::Request<Body>, axum::Json<ExtractRequest>) -> impl std::future::Future<Output = Result<impl IntoResponse, AppError>> {submit_extraction_handler}
-fn(axum::extract::State<Arc<AppState>>, axum::http::Request<Body>, axum::Json<ExtractRequest>) -> impl std::future::Future<Output = Result<impl IntoResponse, AppError>> {submit_extraction_handler}: Handler<_, _>
