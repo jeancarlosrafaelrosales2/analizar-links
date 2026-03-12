@@ -1,0 +1,326 @@
+{
+  "info": {
+    "name": "analizar-links — Audio Extraction API",
+    "description": "Complete API collection for the YouTube Audio Extraction platform.\n\nBase URL: http://localhost:3000\nAudio Files: http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "analizar-links-v1"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000" },
+    { "key": "audio_url", "value": "http://localhost:8080" },
+    { "key": "job_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Liveness Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health",
+            "description": "Basic liveness probe — returns 200 if server is running"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has status field', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health/ready",
+            "description": "Readiness probe — checks all dependencies are available"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Extract",
+      "item": [
+        {
+          "name": "Submit Extraction (MP3)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/extract",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://youtu.be/dQw4w9WgXcQ\",\n  \"format\": \"mp3\",\n  \"bitrate\": 192\n}"
+            },
+            "description": "Enqueue a new audio extraction job.\n\nReturns 202 Accepted with job_id and poll_url."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
+                  "pm.test('Has job_id', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.job_id).to.be.a('string');",
+                  "  pm.collectionVariables.set('job_id', json.data.job_id);",
+                  "});",
+                  "pm.test('Has poll_url', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.poll_url).to.include('/api/v1/extract/');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit Extraction (M4A 320kbps)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/extract",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\",\n  \"format\": \"m4a\",\n  \"bitrate\": 320\n}"
+            },
+            "description": "Extract audio in M4A format at 320kbps"
+          }
+        },
+        {
+          "name": "Submit Extraction (Defaults)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/extract",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://youtu.be/dQw4w9WgXcQ\"\n}"
+            },
+            "description": "Extract with defaults: format=mp3, bitrate=192"
+          }
+        },
+        {
+          "name": "Submit Extraction (Invalid URL)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/extract",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com/not-youtube\",\n  \"format\": \"mp3\"\n}"
+            },
+            "description": "Should return 400 — unsupported domain"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has error', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit Extraction (Invalid Bitrate)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/extract",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://youtu.be/dQw4w9WgXcQ\",\n  \"format\": \"mp3\",\n  \"bitrate\": 999\n}"
+            },
+            "description": "Should return 400 — bitrate not in [128, 192, 256, 320]"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit Batch Extraction",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/extract/batch",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"urls\": [\n    \"https://youtu.be/dQw4w9WgXcQ\",\n    \"https://youtu.be/9bZkp7q19f0\"\n  ],\n  \"format\": \"mp3\",\n  \"bitrate\": 192\n}"
+            },
+            "description": "Batch extraction — multiple URLs in one request.\n(Endpoint pending implementation — BE-8)"
+          }
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/extract/{{job_id}}/status",
+            "description": "Poll job status by ID. Returns current status, progress, metadata."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has status field', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.status).to.be.a('string');",
+                  "});",
+                  "pm.test('Has valid status', () => {",
+                  "  const json = pm.response.json();",
+                  "  const valid = ['pending','fetching_metadata','downloading','transcoding','completed','failed'];",
+                  "  pm.expect(valid).to.include(json.data.status);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Job Status (Invalid UUID)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/extract/not-a-uuid/status",
+            "description": "Should return 400 — invalid UUID format"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Job Status (Not Found)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/extract/00000000-0000-0000-0000-000000000000/status",
+            "description": "Should return 404 — job not found"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Active Jobs",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/extract/jobs",
+            "description": "List all active jobs in cache"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has jobs array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.jobs).to.be.an('array');",
+                  "  pm.expect(json.data.total).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SSE Progress Stream",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/extract/{{job_id}}/sse",
+            "description": "Server-Sent Events stream for real-time job progress.\n\nUse EventSource in browser or `curl -N` to test.\n(Endpoint pending — BE-5)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audio",
+      "item": [
+        {
+          "name": "Download Audio File",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/audio/{{job_id}}.mp3",
+            "description": "Download the processed audio file.\nIn production, this redirects to NGINX at {{audio_url}}/audio/."
+          }
+        },
+        {
+          "name": "Download Audio (NGINX direct)",
+          "request": {
+            "method": "GET",
+            "url": "{{audio_url}}/audio/{{job_id}}.mp3",
+            "description": "Direct download via NGINX (production path).\nRequires docker-compose running."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Docs",
+      "item": [
+        {
+          "name": "OpenAPI Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api-docs",
+            "description": "Swagger UI for API documentation.\n(Pending — BE-9)"
+          }
+        }
+      ]
+    }
+  ]
+}

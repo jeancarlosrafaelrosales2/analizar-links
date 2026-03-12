@@ -1,0 +1,69 @@
+[package]
+name = "analizar-links"
+version = "0.1.0"
+edition = "2021"
+description = "YouTube / multi-platform audio extraction API — Axum 0.7 Clean Architecture"
+authors = ["Chief Architect"]
+
+# ============================================================
+# DEPENDENCIES — Performance-first, zero unnecessary overhead
+# ============================================================
+
+[dependencies]
+# ── HTTP Framework ──────────────────────────────────────────
+axum          = { version = "0.7", features = ["macros"] }
+tokio         = { version = "1",   features = ["full"] }
+tower-http    = { version = "0.5", features = ["cors", "trace"] }
+tower         = { version = "0.4", features = ["util"] }
+
+# ── Serialization ───────────────────────────────────────────
+serde         = { version = "1", features = ["derive"] }
+serde_json    = "1"
+
+# ── Caching (Redis — optional: in-memory fallback built-in) ─
+redis         = { version = "0.24", features = ["tokio-comp", "connection-manager"], optional = true }
+
+# ── Unique IDs + Time ───────────────────────────────────────
+uuid          = { version = "1", features = ["serde", "v4"] }
+chrono        = { version = "0.4", features = ["serde"] }
+
+# ── Error Handling ──────────────────────────────────────────
+thiserror     = "1.0"
+anyhow        = "1"
+
+# ── Logging / Tracing ───────────────────────────────────────
+tracing              = "0.1"
+tracing-subscriber   = { version = "0.3", features = ["env-filter", "json"] }
+
+# ── Concurrency (in-memory job store) ───────────────────────
+dashmap       = "5"
+
+# ── Environment ─────────────────────────────────────────────
+dotenvy       = "0.15"
+
+# ── URL Encoding ────────────────────────────────────────────
+urlencoding   = "2"
+
+# ── SSE / Streaming ─────────────────────────────────────────
+async-stream  = "0.3"
+tokio-stream  = "0.1"
+
+# ── Async Trait Support ─────────────────────────────────────
+async-trait   = "0.1"
+
+# ── OpenAPI Docs ────────────────────────────────────────────
+utoipa              = { version = "4", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui   = { version = "7", features = ["axum"] }
+
+[features]
+default = []
+# Enable Redis persistence for job state
+redis-cache = ["dep:redis"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "test-util"] }
+filetime = "0.2"
+
+[[bin]]
+name    = "analizar-links"
+path    = "src/main.rs"

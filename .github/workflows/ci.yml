@@ -1,0 +1,110 @@
+name: Rust CI
+
+on:
+  push:
+    branches: ['main', 'develop', 'copilot/**']
+  pull_request:
+    branches: ['main', 'develop']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    name: 🔍 Compile Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - run: cargo check --all-targets
+
+  test:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --lib -- --nocapture
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          cargo test --lib 2>&1 | tail -5 >> $GITHUB_STEP_SUMMARY
+
+  clippy:
+    name: 📎 Clippy Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::module_name_repetitions -A clippy::must_use_candidate
+
+  fmt:
+    name: 🎨 Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --check
+
+  docker:
+    name: 🐳 Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test, clippy]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: api
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: analizar-links-api:${{ github.sha }}
+
+  gate:
+    name: ✅ CI Gate
+    runs-on: ubuntu-latest
+    needs: [check, test, clippy, fmt]
+    if: always()
+    steps:
+      - name: Evaluate
+        run: |
+          echo "## ✅ CI Gate" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | ${{ needs.check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Clippy | ${{ needs.clippy.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Format | ${{ needs.fmt.result }} |" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.check.result }}" == "failure" ]] || \
+             [[ "${{ needs.test.result }}" == "failure" ]] || \
+             [[ "${{ needs.fmt.result }}" == "failure" ]]; then
+            echo "❌ Gate FAILED" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "✅ Gate PASSED" >> $GITHUB_STEP_SUMMARY
