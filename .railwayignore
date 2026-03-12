@@ -1,0 +1,7 @@
+target/
+.env
+*.env.local
+*.mp3
+*.m4a
+*.opus
+.git/
