@@ -72,7 +72,7 @@ jobs:
     name: 🐳 Docker Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [test, clippy]
+    needs: [test]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     steps:
       - uses: actions/checkout@v4
