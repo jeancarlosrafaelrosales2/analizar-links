@@ -28,7 +28,7 @@ uuid          = { version = "1", features = ["serde", "v4"] }
 chrono        = { version = "0.4", features = ["serde"] }
 
 # ── Error Handling ──────────────────────────────────────────
-thiserror     = "1.0"
+thiserror     = "2.0"
 anyhow        = "1"
 
 # ── Logging / Tracing ───────────────────────────────────────
