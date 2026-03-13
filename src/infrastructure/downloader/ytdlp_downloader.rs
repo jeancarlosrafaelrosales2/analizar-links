@@ -8,7 +8,6 @@
 
 use async_trait::async_trait;
 use serde::Deserialize;
-use std::path::Path;
 use std::process::Stdio;
 use tokio::process::Command;
 use tracing::{debug, error, info, warn};
@@ -40,8 +39,6 @@ struct YtDlpInfo {
 pub struct YtDlpDownloader {
     /// Path al binario yt-dlp (default: "yt-dlp" si está en PATH)
     ytdlp_path: String,
-    /// Directorio de trabajo para archivos temporales
-    work_dir: String,
     /// Browser para cookies (firefox, chrome, chromium, brave, etc.)
     browser: Option<String>,
 }
@@ -49,12 +46,11 @@ pub struct YtDlpDownloader {
 impl YtDlpDownloader {
     pub fn new(
         ytdlp_path: impl Into<String>,
-        work_dir: impl Into<String>,
+        _work_dir: impl Into<String>, // reservado para uso futuro
         browser: Option<String>,
     ) -> Self {
         Self {
             ytdlp_path: ytdlp_path.into(),
-            work_dir: work_dir.into(),
             browser,
         }
     }

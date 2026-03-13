@@ -2,7 +2,6 @@
 
 use crate::common::constants::{
     ALLOWED_BITRATES_KBPS, DEFAULT_MP3_BITRATE_KBPS, DEFAULT_OUTPUT_FORMAT,
-    MAX_VIDEO_DURATION_MINUTES,
 };
 use crate::common::AppError;
 use crate::domain::value_objects::{AudioFormat, VideoUrl};
