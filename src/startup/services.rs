@@ -36,7 +36,10 @@ pub async fn init_services(config: &AppConfig) -> Services {
 
     let transcoder = Arc::new(FfmpegTranscoder::new(&config.ffmpeg_path));
 
-    let base_url = format!("http://{}:{}", config.host, config.port);
+    // PUBLIC_URL tiene prioridad (producción con https://)
+    // Fallback: construir desde host:port (desarrollo local)
+    let base_url = config.public_url.clone()
+        .unwrap_or_else(|| format!("http://{}:{}", config.host, config.port));
     let storage = Arc::new(LocalAudioStorage::new(
         &config.storage_path,
         &base_url,

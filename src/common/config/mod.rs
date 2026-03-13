@@ -26,6 +26,9 @@ pub struct AppConfig {
     pub job_ttl_seconds: u64,
     /// Rate limit: requests por segundo por IP
     pub rate_limit_rps: u64,
+    /// URL pública del servidor (para generar download_url correctas en producción)
+    /// Ejemplo: https://service-download-music-production.up.railway.app
+    pub public_url: Option<String>,
 }
 
 impl AppConfig {
@@ -56,6 +59,7 @@ impl AppConfig {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(10),
+            public_url: std::env::var("PUBLIC_URL").ok(),
         }
     }
 
@@ -73,6 +77,7 @@ impl AppConfig {
             ytdlp_browser: None,
             job_ttl_seconds: 60,
             rate_limit_rps: 100,
+            public_url: None,
         }
     }
 }
