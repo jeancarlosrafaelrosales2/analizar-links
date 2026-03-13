@@ -52,7 +52,12 @@ pub async fn init_services(config: &AppConfig) -> Services {
 
     let work_dir = format!("{}/work", config.storage_path);
     let extract_service = Arc::new(ExtractService::new(
-        downloader, transcoder, storage, job_cache, work_dir,
+        downloader,
+        transcoder,
+        storage,
+        job_cache,
+        work_dir,
+        config.worker_concurrency,
     ));
 
     info!("✅ Services initialized");

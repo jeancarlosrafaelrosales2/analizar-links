@@ -29,6 +29,8 @@ pub struct AppConfig {
     /// URL pública del servidor (para generar download_url correctas en producción)
     /// Ejemplo: https://service-download-music-production.up.railway.app
     pub public_url: Option<String>,
+    /// Máximo de descargas concurrentes (limita yt-dlp processes paralelos)
+    pub worker_concurrency: usize,
 }
 
 impl AppConfig {
@@ -57,6 +59,10 @@ impl AppConfig {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(10),
             public_url: std::env::var("PUBLIC_URL").ok(),
+            worker_concurrency: std::env::var("WORKER_CONCURRENCY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(5),
         }
     }
 
@@ -75,6 +81,7 @@ impl AppConfig {
             job_ttl_seconds: 60,
             rate_limit_rps: 100,
             public_url: None,
+            worker_concurrency: 5,
         }
     }
 }

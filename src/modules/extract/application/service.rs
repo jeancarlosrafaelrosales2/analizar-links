@@ -4,6 +4,7 @@
 //! El handler HTTP retorna inmediatamente con job_id; el procesamiento ocurre en background.
 
 use std::sync::Arc;
+use tokio::sync::Semaphore;
 use tracing::{error, info, instrument, warn};
 use uuid::Uuid;
 
@@ -33,6 +34,8 @@ pub struct ExtractService {
     job_cache: Arc<dyn JobCache>,
     /// Directorio temporal para archivos intermedios
     work_dir: String,
+    /// Semaphore para limitar descargas concurrentes y evitar rate-limiting de YouTube
+    concurrency_limit: Arc<Semaphore>,
 }
 
 impl ExtractService {
@@ -42,6 +45,7 @@ impl ExtractService {
         storage: Arc<dyn AudioStorage>,
         job_cache: Arc<dyn JobCache>,
         work_dir: impl Into<String>,
+        concurrency: usize,
     ) -> Self {
         Self {
             downloader,
@@ -49,6 +53,7 @@ impl ExtractService {
             storage,
             job_cache,
             work_dir: work_dir.into(),
+            concurrency_limit: Arc::new(Semaphore::new(concurrency)),
         }
     }
 
@@ -82,8 +87,12 @@ impl ExtractService {
         let url_str = cmd.url.as_str().to_string();
         let format = cmd.format;
         let bitrate = cmd.bitrate_kbps;
+        let semaphore = Arc::clone(&self.concurrency_limit);
 
         tokio::spawn(async move {
+            // Adquirir slot de concurrencia antes de invocar yt-dlp
+            // Esto evita que múltiples jobs simultaneós saturen YouTube con requests
+            let _permit = semaphore.acquire_owned().await;
             process_job(
                 job_id, url_str, format, bitrate, downloader, transcoder, storage, cache, work_dir,
             )
@@ -303,7 +312,19 @@ async fn process_job(
 
     // ── PASO 4: Almacenar definitivamente ────────────────
     let clean_title = sanitize_title(&metadata.title);
-    let filename = format!("{}.{}", clean_title, format.extension());
+    // Prefijo con los primeros 8 chars del job_id (sin guiones) para garantizar unicidad
+    // cuando dos jobs descargan el mismo video (mismo título → mismo nombre de archivo)
+    let id_short: String = job_id
+        .to_string()
+        .replace('-', "")
+        .chars()
+        .take(8)
+        .collect();
+    let filename = if clean_title.is_empty() || clean_title == "audio" {
+        format!("{}.{}", job_id, format.extension())
+    } else {
+        format!("{}_{}.{}", id_short, clean_title, format.extension())
+    };
     let stored_path = match storage.store(&final_audio_path, &filename).await {
         Ok(p) => p,
         Err(e) => {
