@@ -60,17 +60,47 @@ impl YtDlpDownloader {
     }
 
     /// Construye los args base compartidos entre metadata y download.
+    ///
+    /// Usa el cliente Android de YouTube para evitar la detección de bots.
+    /// El cliente Android no requiere autenticación adicional a diferencia del web.
     fn base_args(&self) -> Vec<String> {
         let mut args = vec![
             "--no-playlist".to_string(),
-            "--js-runtimes".to_string(),
-            "node".to_string(),
+            // Android client bypasses YouTube bot detection (no sign-in required)
+            "--extractor-args".to_string(),
+            "youtube:player_client=android,web".to_string(),
+            // Retry logic
+            "--retries".to_string(), "3".to_string(),
+            "--fragment-retries".to_string(), "3".to_string(),
         ];
         if let Some(ref browser) = self.browser {
             args.push("--cookies-from-browser".to_string());
             args.push(browser.clone());
         }
         args
+    }
+
+    /// Convierte errores técnicos de yt-dlp en mensajes amigables para el usuario.
+    fn friendly_error(raw: &str) -> String {
+        let lower = raw.to_lowercase();
+        if lower.contains("sign in") || lower.contains("bot") || lower.contains("confirm your age") {
+            "Este video requiere verificación de edad o inicio de sesión. Prueba con otro video.".to_string()
+        } else if lower.contains("private video") || lower.contains("privado") {
+            "Este video es privado y no se puede descargar.".to_string()
+        } else if lower.contains("unavailable") || lower.contains("not available") || lower.contains("removed") {
+            "Este video no está disponible. Puede haber sido eliminado o bloqueado en tu región.".to_string()
+        } else if lower.contains("copyright") || lower.contains("blocked") {
+            "Este video está bloqueado por derechos de autor.".to_string()
+        } else if lower.contains("not a youtube url") || lower.contains("unsupported url") {
+            "URL no soportada. Por favor usa un link de YouTube válido.".to_string()
+        } else if lower.contains("network") || lower.contains("connection") || lower.contains("timeout") {
+            "Error de conexión. Verifica tu internet e intenta de nuevo.".to_string()
+        } else if lower.contains("format") || lower.contains("no video formats") {
+            "No se encontraron formatos de audio disponibles para este video.".to_string()
+        } else {
+            // Fallback: no exponer el error técnico completo
+            "No se pudo procesar este video. Verifica que el link sea correcto e intenta de nuevo.".to_string()
+        }
     }
 
     /// Verifica que yt-dlp esté disponible.
@@ -116,16 +146,14 @@ impl VideoDownloader for YtDlpDownloader {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            // Only treat ERROR lines as actual errors (ignore WARNINGs)
             let error_line = stderr
                 .lines()
                 .find(|l| l.contains("ERROR"))
                 .unwrap_or_else(|| stderr.lines().next().unwrap_or("error desconocido"));
             error!(stderr = %stderr, "yt-dlp metadata failed");
-            return Err(AppError::DownloadFailed(format!(
-                "yt-dlp no pudo obtener metadatos: {}",
-                error_line
-            )));
+            return Err(AppError::DownloadFailed(
+                Self::friendly_error(error_line)
+            ));
         }
 
         let json_str = String::from_utf8_lossy(&output.stdout);
@@ -202,10 +230,13 @@ impl VideoDownloader for YtDlpDownloader {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             warn!(stderr = %stderr, "yt-dlp download failed");
-            return Err(AppError::DownloadFailed(format!(
-                "Error de descarga: {}",
-                stderr.lines().next().unwrap_or("error desconocido")
-            )));
+            let error_line = stderr
+                .lines()
+                .find(|l| l.contains("ERROR"))
+                .unwrap_or_else(|| stderr.lines().next().unwrap_or("error desconocido"));
+            return Err(AppError::DownloadFailed(
+                Self::friendly_error(error_line)
+            ));
         }
 
         // Buscar el archivo descargado en output_dir
