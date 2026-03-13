@@ -5,23 +5,58 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  IMAGE_NAME: ghcr.io/jeancarlosrafaelrosales2/analizar-links
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli@latest
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy to Railway
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: api
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Make Package Public
+        run: |
+          # Make the container package public so Railway can pull without credentials
+          curl -s -X PATCH \
+            "https://api.github.com/user/packages/container/analizar-links" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            -d '{"visibility":"public"}' \
+            -o /dev/null -w "Package visibility update: %{http_code}\n"
+
+      - name: Update Railway Service
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          railway up \
-            --service a0c5e174-f8c4-4a56-aa4a-2ae5abf46a72 \
-            --environment production \
-            --detach
+          RESULT=$(curl -s -X POST "https://backboard.railway.app/graphql/v2" \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\":\"mutation { serviceInstanceUpdate(serviceId: \\\"a0c5e174-f8c4-4a56-aa4a-2ae5abf46a72\\\", environmentId: \\\"56422b57-964c-4207-b48e-6ce1345c4a28\\\", input: { source: { image: \\\"ghcr.io/jeancarlosrafaelrosales2/analizar-links:${IMAGE_TAG}\\\" } }) }\"}")
+          echo "Railway update result: $RESULT"
+
 
