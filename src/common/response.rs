@@ -21,10 +21,18 @@ pub struct ApiResponse<T: Serialize> {
 
 impl<T: Serialize> ApiResponse<T> {
     pub fn ok(data: T) -> Self {
-        Self { success: true, data, message: None }
+        Self {
+            success: true,
+            data,
+            message: None,
+        }
     }
 
     pub fn ok_with_message(data: T, message: impl Into<String>) -> Self {
-        Self { success: true, data, message: Some(message.into()) }
+        Self {
+            success: true,
+            data,
+            message: Some(message.into()),
+        }
     }
 }

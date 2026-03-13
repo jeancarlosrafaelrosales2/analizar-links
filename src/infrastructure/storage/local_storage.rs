@@ -62,11 +62,16 @@ impl AudioStorage for LocalAudioStorage {
         // Verificar que el archivo existe
         if !Path::new(&full_path).exists() {
             return Err(AppError::StorageFailed(format!(
-                "Archivo no encontrado: {}", filename
+                "Archivo no encontrado: {}",
+                filename
             )));
         }
 
-        let url = format!("{}/api/v1/audio/{}", self.base_url, urlencoding::encode(filename));
+        let url = format!(
+            "{}/api/v1/audio/{}",
+            self.base_url,
+            urlencoding::encode(filename)
+        );
         Ok(url)
     }
 

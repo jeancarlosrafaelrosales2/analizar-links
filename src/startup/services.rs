@@ -5,9 +5,7 @@ use tracing::info;
 
 use crate::common::AppConfig;
 use crate::infrastructure::{
-    cache::MemoryJobCache,
-    downloader::YtDlpDownloader,
-    storage::LocalAudioStorage,
+    cache::MemoryJobCache, downloader::YtDlpDownloader, storage::LocalAudioStorage,
     transcoder::FfmpegTranscoder,
 };
 use crate::modules::extract::application::ExtractService;
@@ -23,7 +21,11 @@ pub async fn init_services(config: &AppConfig) -> Services {
 
     // Crear directorio de storage si no existe
     if let Err(e) = std::fs::create_dir_all(&config.storage_path) {
-        tracing::warn!("Could not create storage_path {}: {}", config.storage_path, e);
+        tracing::warn!(
+            "Could not create storage_path {}: {}",
+            config.storage_path,
+            e
+        );
     }
 
     // ── Infrastructure ───────────────────────────────────
@@ -38,12 +40,11 @@ pub async fn init_services(config: &AppConfig) -> Services {
 
     // PUBLIC_URL tiene prioridad (producción con https://)
     // Fallback: construir desde host:port (desarrollo local)
-    let base_url = config.public_url.clone()
+    let base_url = config
+        .public_url
+        .clone()
         .unwrap_or_else(|| format!("http://{}:{}", config.host, config.port));
-    let storage = Arc::new(LocalAudioStorage::new(
-        &config.storage_path,
-        &base_url,
-    ));
+    let storage = Arc::new(LocalAudioStorage::new(&config.storage_path, &base_url));
 
     let job_cache = Arc::new(MemoryJobCache::new());
 
@@ -51,11 +52,7 @@ pub async fn init_services(config: &AppConfig) -> Services {
 
     let work_dir = format!("{}/work", config.storage_path);
     let extract_service = Arc::new(ExtractService::new(
-        downloader,
-        transcoder,
-        storage,
-        job_cache,
-        work_dir,
+        downloader, transcoder, storage, job_cache, work_dir,
     ));
 
     info!("✅ Services initialized");

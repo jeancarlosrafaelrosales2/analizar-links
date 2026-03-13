@@ -39,17 +39,14 @@ impl AppConfig {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(3100),
-            host: std::env::var("HOST")
-                .unwrap_or_else(|_| "0.0.0.0".to_string()),
+            host: std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
             cors_allowed_origins: std::env::var("CORS_ALLOWED_ORIGINS")
                 .unwrap_or_else(|_| "*".to_string()),
             redis_url: std::env::var("REDIS_URL").ok(),
             storage_path: std::env::var("STORAGE_PATH")
                 .unwrap_or_else(|_| "/tmp/analizar-links".to_string()),
-            ytdlp_path: std::env::var("YTDLP_PATH")
-                .unwrap_or_else(|_| "yt-dlp".to_string()),
-            ffmpeg_path: std::env::var("FFMPEG_PATH")
-                .unwrap_or_else(|_| "ffmpeg".to_string()),
+            ytdlp_path: std::env::var("YTDLP_PATH").unwrap_or_else(|_| "yt-dlp".to_string()),
+            ffmpeg_path: std::env::var("FFMPEG_PATH").unwrap_or_else(|_| "ffmpeg".to_string()),
             ytdlp_browser: std::env::var("YTDLP_BROWSER").ok(),
             job_ttl_seconds: std::env::var("JOB_TTL_SECONDS")
                 .ok()

@@ -16,7 +16,8 @@ struct HealthResponse {
 
 /// GET /health — Liveness probe.
 pub async fn health_handler(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-    let active_jobs = state.extract_service
+    let active_jobs = state
+        .extract_service
         .list_jobs("http://localhost")
         .await
         .map(|r| r.total)
@@ -36,10 +37,13 @@ pub async fn health_handler(State(state): State<Arc<AppState>>) -> impl IntoResp
 /// GET /health/ready — Readiness probe (verifica tools externas).
 pub async fn ready_handler() -> impl IntoResponse {
     // Por simplicidad, siempre retorna 200 — en prod verificar yt-dlp + ffmpeg
-    (StatusCode::OK, Json(serde_json::json!({
-        "status": "ready",
-        "checks": {
-            "server": "ok"
-        }
-    })))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "ready",
+            "checks": {
+                "server": "ok"
+            }
+        })),
+    )
 }

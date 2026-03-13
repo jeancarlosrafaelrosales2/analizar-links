@@ -25,9 +25,7 @@ pub enum JobStatus {
         duration_secs: Option<u64>,
     },
     /// Fallido con mensaje de error
-    Failed {
-        reason: String,
-    },
+    Failed { reason: String },
 }
 
 impl JobStatus {
@@ -38,7 +36,10 @@ impl JobStatus {
 
     /// True si el job está en progreso.
     pub fn is_in_progress(&self) -> bool {
-        matches!(self, Self::FetchingMetadata | Self::Downloading { .. } | Self::Transcoding)
+        matches!(
+            self,
+            Self::FetchingMetadata | Self::Downloading { .. } | Self::Transcoding
+        )
     }
 
     /// Nombre legible del estado.
@@ -70,8 +71,15 @@ mod tests {
 
     #[test]
     fn test_terminal_states() {
-        assert!(JobStatus::Completed { output_path: "/tmp/a.mp3".into(), duration_secs: Some(180) }.is_terminal());
-        assert!(JobStatus::Failed { reason: "error".into() }.is_terminal());
+        assert!(JobStatus::Completed {
+            output_path: "/tmp/a.mp3".into(),
+            duration_secs: Some(180)
+        }
+        .is_terminal());
+        assert!(JobStatus::Failed {
+            reason: "error".into()
+        }
+        .is_terminal());
         assert!(!JobStatus::Pending.is_terminal());
         assert!(!JobStatus::Downloading { progress_pct: 50 }.is_terminal());
     }

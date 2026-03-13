@@ -86,7 +86,9 @@ impl ExtractJob {
 
     /// Actualiza el progreso de descarga.
     pub fn update_download_progress(&mut self, pct: u8) {
-        self.status = JobStatus::Downloading { progress_pct: pct.min(100) };
+        self.status = JobStatus::Downloading {
+            progress_pct: pct.min(100),
+        };
         self.updated_at = Utc::now();
     }
 
@@ -108,7 +110,9 @@ impl ExtractJob {
 
     /// Transición a Failed con razón del error.
     pub fn fail(&mut self, reason: impl Into<String>) {
-        self.status = JobStatus::Failed { reason: reason.into() };
+        self.status = JobStatus::Failed {
+            reason: reason.into(),
+        };
         self.updated_at = Utc::now();
     }
 
@@ -153,10 +157,16 @@ mod tests {
         assert_eq!(job.status.label(), "fetching_metadata");
 
         job.start_downloading();
-        assert!(matches!(job.status, JobStatus::Downloading { progress_pct: 0 }));
+        assert!(matches!(
+            job.status,
+            JobStatus::Downloading { progress_pct: 0 }
+        ));
 
         job.update_download_progress(50);
-        assert!(matches!(job.status, JobStatus::Downloading { progress_pct: 50 }));
+        assert!(matches!(
+            job.status,
+            JobStatus::Downloading { progress_pct: 50 }
+        ));
 
         job.start_transcoding();
         assert_eq!(job.status, JobStatus::Transcoding);

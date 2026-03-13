@@ -22,11 +22,11 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::instrument;
 
-use crate::AppState;
 use crate::common::{ApiResponse, AppError};
 use crate::modules::extract::application::commands::ExtractAudioCommand;
 use crate::modules::extract::application::dtos::requests::{BatchExtractRequest, ExtractRequest};
 use crate::modules::extract::application::queries::GetJobStatusQuery;
+use crate::AppState;
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -69,13 +69,10 @@ pub async fn submit_extraction_handler(
 ) -> Result<impl IntoResponse, AppError> {
     let base_url = get_base_url(&state, &_headers);
 
-    let cmd = ExtractAudioCommand::new(
-        &payload.url,
-        payload.format.as_deref(),
-        payload.bitrate,
-    )?;
+    let cmd = ExtractAudioCommand::new(&payload.url, payload.format.as_deref(), payload.bitrate)?;
 
-    let response = state.extract_service
+    let response = state
+        .extract_service
         .submit_extraction(cmd, &base_url)
         .await?;
 
@@ -99,7 +96,8 @@ pub async fn submit_batch_handler(
 ) -> Result<impl IntoResponse, AppError> {
     let base_url = get_base_url(&state, &headers);
 
-    let response = state.extract_service
+    let response = state
+        .extract_service
         .submit_batch(
             payload.urls,
             payload.format.as_deref(),
@@ -129,7 +127,8 @@ pub async fn get_job_status_handler(
     let base_url = get_base_url(&state, &headers);
     let query = GetJobStatusQuery::new(&job_id)?;
 
-    let response = state.extract_service
+    let response = state
+        .extract_service
         .get_job_status(query, &base_url)
         .await?;
 
@@ -164,7 +163,8 @@ pub async fn sse_progress_handler(
     let uuid = query.job_id;
 
     // Verificar que el job existe antes de abrir el stream
-    let _ = state.extract_service
+    let _ = state
+        .extract_service
         .get_job_status(query, &base_url)
         .await?;
 
@@ -272,15 +272,11 @@ pub async fn serve_audio_handler(
 
     let disposition = format!("attachment; filename=\"{}\"", decoded_name);
     let mut response_headers = HeaderMap::new();
-    response_headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static(content_type),
-    );
+    response_headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
     response_headers.insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&disposition).unwrap_or_else(|_| {
-            HeaderValue::from_static("attachment")
-        }),
+        HeaderValue::from_str(&disposition)
+            .unwrap_or_else(|_| HeaderValue::from_static("attachment")),
     );
 
     Ok((StatusCode::OK, response_headers, bytes))

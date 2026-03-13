@@ -10,5 +10,5 @@ pub mod response;
 
 // Re-exports ergonómicos
 pub use config::AppConfig;
-pub use error::{AppError, ApiErrorResponse};
+pub use error::{ApiErrorResponse, AppError};
 pub use response::ApiResponse;

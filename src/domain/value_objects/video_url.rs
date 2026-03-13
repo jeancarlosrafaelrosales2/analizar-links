@@ -28,9 +28,10 @@ impl VideoUrl {
 
         // Validación básica de esquema
         if !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err(AppError::InvalidUrl(
-                format!("URL debe comenzar con https://. Recibido: {}", &url[..url.len().min(50)])
-            ));
+            return Err(AppError::InvalidUrl(format!(
+                "URL debe comenzar con https://. Recibido: {}",
+                &url[..url.len().min(50)]
+            )));
         }
 
         // Verificar dominio soportado

@@ -85,9 +85,9 @@ impl ExtractService {
 
         tokio::spawn(async move {
             process_job(
-                job_id, url_str, format, bitrate,
-                downloader, transcoder, storage, cache, work_dir,
-            ).await;
+                job_id, url_str, format, bitrate, downloader, transcoder, storage, cache, work_dir,
+            )
+            .await;
         });
 
         let poll_url = format!("{}/api/v1/extract/{}/status", base_url, job_id);
@@ -109,7 +109,8 @@ impl ExtractService {
         query: GetJobStatusQuery,
         base_url: &str,
     ) -> Result<JobStatusResponse, AppError> {
-        let job = self.job_cache
+        let job = self
+            .job_cache
             .get(query.job_id)
             .await
             .ok_or_else(|| AppError::JobNotFound(query.job_id.to_string()))?;
@@ -156,7 +157,11 @@ impl ExtractService {
         if urls.len() > MAX_BATCH_URLS {
             return Err(AppError::InvalidParam {
                 field: "urls".to_string(),
-                reason: format!("Máximo {} URLs por batch. Recibidas: {}", MAX_BATCH_URLS, urls.len()),
+                reason: format!(
+                    "Máximo {} URLs por batch. Recibidas: {}",
+                    MAX_BATCH_URLS,
+                    urls.len()
+                ),
             });
         }
 
@@ -165,15 +170,13 @@ impl ExtractService {
 
         for url in &urls {
             match ExtractAudioCommand::new(url, format_str, bitrate) {
-                Ok(cmd) => {
-                    match self.submit_extraction(cmd, base_url).await {
-                        Ok(response) => jobs.push(response),
-                        Err(e) => errors.push(BatchItemError {
-                            url: url.clone(),
-                            error: e.to_string(),
-                        }),
-                    }
-                }
+                Ok(cmd) => match self.submit_extraction(cmd, base_url).await {
+                    Ok(response) => jobs.push(response),
+                    Err(e) => errors.push(BatchItemError {
+                        url: url.clone(),
+                        error: e.to_string(),
+                    }),
+                },
                 Err(e) => {
                     errors.push(BatchItemError {
                         url: url.clone(),
@@ -186,7 +189,11 @@ impl ExtractService {
         let total_submitted = jobs.len();
         let total_errors = errors.len();
 
-        info!(submitted = total_submitted, errors = total_errors, "Batch submission completed");
+        info!(
+            submitted = total_submitted,
+            errors = total_errors,
+            "Batch submission completed"
+        );
 
         Ok(BatchExtractResponse {
             jobs,
@@ -276,7 +283,10 @@ async fn process_job(
         } else {
             update_job_status(&cache, job_id, |j| j.start_transcoding()).await;
             let mp3_out = format!("{}/{}.mp3", job_work_dir, job_id);
-            match transcoder.transcode_to_mp3(&downloaded_path, &mp3_out, bitrate_kbps).await {
+            match transcoder
+                .transcode_to_mp3(&downloaded_path, &mp3_out, bitrate_kbps)
+                .await
+            {
                 Ok(p) => p,
                 Err(e) => {
                     error!(job_id = %job_id, error = %e, "Transcode failed");
@@ -343,7 +353,11 @@ fn sanitize_title(title: &str) -> String {
     for ch in title.chars() {
         match ch {
             '(' | '[' => depth += 1,
-            ')' | ']' => { if depth > 0 { depth -= 1; } }
+            ')' | ']' => {
+                if depth > 0 {
+                    depth -= 1;
+                }
+            }
             _ if depth == 0 => {
                 if ch.is_alphanumeric() || ch == '-' || ch == ' ' || ch == '\'' {
                     result.push(ch);

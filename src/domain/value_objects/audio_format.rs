@@ -26,7 +26,10 @@ impl AudioFormat {
             "flac" => Ok(Self::Flac),
             other => Err(AppError::InvalidParam {
                 field: "format".to_string(),
-                reason: format!("Formato '{}' no soportado. Usa: mp3, m4a, webm, ogg, flac", other),
+                reason: format!(
+                    "Formato '{}' no soportado. Usa: mp3, m4a, webm, ogg, flac",
+                    other
+                ),
             }),
         }
     }

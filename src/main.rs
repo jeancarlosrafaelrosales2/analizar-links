@@ -19,12 +19,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Inicializar tracing
     startup::init_tracing();
 
-    tracing::info!("🎵 analizar-links — YouTube Audio Extraction API v{}", env!("CARGO_PKG_VERSION"));
+    tracing::info!(
+        "🎵 analizar-links — YouTube Audio Extraction API v{}",
+        env!("CARGO_PKG_VERSION")
+    );
 
     // 3. Cargar configuración
     let config = analizar_links::common::AppConfig::from_env();
-    tracing::info!("⚙️  Port: {} | Storage: {}", config.port, config.storage_path);
-    tracing::info!("🔧 yt-dlp: {} | ffmpeg: {}", config.ytdlp_path, config.ffmpeg_path);
+    tracing::info!(
+        "⚙️  Port: {} | Storage: {}",
+        config.port,
+        config.storage_path
+    );
+    tracing::info!(
+        "🔧 yt-dlp: {} | ffmpeg: {}",
+        config.ytdlp_path,
+        config.ffmpeg_path
+    );
 
     // 4. Inicializar servicios
     let services = startup::init_services(&config).await;

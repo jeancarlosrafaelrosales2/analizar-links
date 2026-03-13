@@ -6,9 +6,9 @@ pub mod server;
 pub mod services;
 
 pub use cleanup::spawn_cleanup_task;
-pub use services::init_services;
 pub use routes::build_router;
 pub use server::run_server;
+pub use services::init_services;
 
 /// Re-exporta logging init para main.rs
 pub fn init_tracing() {

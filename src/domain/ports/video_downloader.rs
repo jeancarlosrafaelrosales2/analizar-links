@@ -1,9 +1,9 @@
 //! domain/ports/video_downloader — Port para descarga de video/audio.
 
-use async_trait::async_trait;
 use crate::common::AppError;
 use crate::domain::entities::VideoMetadata;
 use crate::domain::value_objects::AudioFormat;
+use async_trait::async_trait;
 
 /// Port: Descargador de video/audio.
 ///

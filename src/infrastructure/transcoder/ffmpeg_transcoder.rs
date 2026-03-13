@@ -23,7 +23,9 @@ pub struct FfmpegTranscoder {
 
 impl FfmpegTranscoder {
     pub fn new(ffmpeg_path: impl Into<String>) -> Self {
-        Self { ffmpeg_path: ffmpeg_path.into() }
+        Self {
+            ffmpeg_path: ffmpeg_path.into(),
+        }
     }
 }
 
@@ -68,16 +70,24 @@ impl AudioTranscoder for FfmpegTranscoder {
 
         let output = Command::new(&self.ffmpeg_path)
             .args([
-                "-i", input_path,
-                "-vn",                    // Sin video
-                "-acodec", "libmp3lame",  // Codec MP3
-                "-b:a", &bitrate_arg,     // Bitrate objetivo
-                "-q:a", "0",              // VBR calidad máxima
-                "-ar", "44100",           // Sample rate 44.1kHz
-                "-ac", "2",               // Estéreo
-                "-af", audio_filters,     // Filtros de calidad profesional
-                "-threads", "0",          // Usar todos los núcleos del sistema
-                "-y",                     // Sobreescribir si existe
+                "-i",
+                input_path,
+                "-vn", // Sin video
+                "-acodec",
+                "libmp3lame", // Codec MP3
+                "-b:a",
+                &bitrate_arg, // Bitrate objetivo
+                "-q:a",
+                "0", // VBR calidad máxima
+                "-ar",
+                "44100", // Sample rate 44.1kHz
+                "-ac",
+                "2", // Estéreo
+                "-af",
+                audio_filters, // Filtros de calidad profesional
+                "-threads",
+                "0",  // Usar todos los núcleos del sistema
+                "-y", // Sobreescribir si existe
                 output_path,
             ])
             .stdout(Stdio::null())

@@ -106,12 +106,12 @@ mod tests {
         fs::write(&old_file, b"fake audio").unwrap();
 
         // Set file time to 2 hours ago
-        let two_hours_ago = std::time::SystemTime::now()
-            - Duration::from_secs(7200);
+        let two_hours_ago = std::time::SystemTime::now() - Duration::from_secs(7200);
         filetime::set_file_mtime(
             &old_file,
             filetime::FileTime::from_system_time(two_hours_ago),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Create a recent file
         let new_file = format!("{}/new-test.mp3", dir);

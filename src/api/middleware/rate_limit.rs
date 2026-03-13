@@ -51,10 +51,13 @@ impl RateLimiter {
     fn try_acquire(&self, ip: &str) -> bool {
         let now = Instant::now();
 
-        let mut entry = self.buckets.entry(ip.to_string()).or_insert_with(|| Bucket {
-            tokens: self.max_tokens,
-            last_refill: now,
-        });
+        let mut entry = self
+            .buckets
+            .entry(ip.to_string())
+            .or_insert_with(|| Bucket {
+                tokens: self.max_tokens,
+                last_refill: now,
+            });
 
         let bucket = entry.value_mut();
 
@@ -74,9 +77,8 @@ impl RateLimiter {
     /// Periodically evicts stale entries (call from a background task).
     pub fn cleanup_stale_entries(&self, max_idle_secs: u64) {
         let now = Instant::now();
-        self.buckets.retain(|_, bucket| {
-            now.duration_since(bucket.last_refill).as_secs() < max_idle_secs
-        });
+        self.buckets
+            .retain(|_, bucket| now.duration_since(bucket.last_refill).as_secs() < max_idle_secs);
     }
 }
 
@@ -144,7 +146,11 @@ mod tests {
         let limiter = RateLimiter::new(10);
         // Should allow 20 requests (burst = 2x rate)
         for i in 0..20 {
-            assert!(limiter.try_acquire("127.0.0.1"), "Request {} should be allowed", i);
+            assert!(
+                limiter.try_acquire("127.0.0.1"),
+                "Request {} should be allowed",
+                i
+            );
         }
     }
 
@@ -166,7 +172,10 @@ mod tests {
         for _ in 0..4 {
             limiter.try_acquire("192.168.1.1");
         }
-        assert!(!limiter.try_acquire("192.168.1.1"), "IP 1 should be limited");
+        assert!(
+            !limiter.try_acquire("192.168.1.1"),
+            "IP 1 should be limited"
+        );
         // IP 2 should still have tokens
         assert!(limiter.try_acquire("192.168.1.2"), "IP 2 should be allowed");
     }
@@ -188,7 +197,10 @@ mod tests {
     #[test]
     fn test_extract_client_ip_forwarded() {
         let req = Request::builder()
-            .header("x-forwarded-for", "203.0.113.50, 70.41.3.18, 150.172.238.178")
+            .header(
+                "x-forwarded-for",
+                "203.0.113.50, 70.41.3.18, 150.172.238.178",
+            )
             .body(())
             .unwrap();
         assert_eq!(extract_client_ip(&req), "203.0.113.50");
@@ -205,9 +217,7 @@ mod tests {
 
     #[test]
     fn test_extract_client_ip_fallback() {
-        let req = Request::builder()
-            .body(())
-            .unwrap();
+        let req = Request::builder().body(()).unwrap();
         assert_eq!(extract_client_ip(&req), "unknown");
     }
 }

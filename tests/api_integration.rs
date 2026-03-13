@@ -12,8 +12,8 @@ use axum::http::{Request, StatusCode};
 use tower::ServiceExt; // oneshot
 
 use analizar_links::common::AppConfig;
-use analizar_links::startup::services::init_services;
 use analizar_links::startup::routes::build_router;
+use analizar_links::startup::services::init_services;
 use analizar_links::AppState;
 
 /// Helper: Build a fully wired Router with real services (in-memory cache).
@@ -242,7 +242,10 @@ async fn batch_extraction_returns_202_with_results() {
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json["success"].as_bool().unwrap_or(false));
-    assert!(json["data"]["jobs"].is_array(), "Expected 'jobs' array in data, got: {json}");
+    assert!(
+        json["data"]["jobs"].is_array(),
+        "Expected 'jobs' array in data, got: {json}"
+    );
     assert_eq!(json["data"]["jobs"].as_array().unwrap().len(), 2);
     assert_eq!(json["data"]["total_submitted"].as_u64().unwrap(), 2);
     assert_eq!(json["data"]["total_errors"].as_u64().unwrap(), 0);

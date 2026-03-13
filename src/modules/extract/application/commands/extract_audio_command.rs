@@ -1,10 +1,10 @@
 //! application/commands/extract_audio_command — Comando para extraer audio.
 
-use crate::common::AppError;
 use crate::common::constants::{
     ALLOWED_BITRATES_KBPS, DEFAULT_MP3_BITRATE_KBPS, DEFAULT_OUTPUT_FORMAT,
     MAX_VIDEO_DURATION_MINUTES,
 };
+use crate::common::AppError;
 use crate::domain::value_objects::{AudioFormat, VideoUrl};
 
 /// Comando CQRS: Solicitar extracción de audio de un video.
@@ -45,7 +45,11 @@ impl ExtractAudioCommand {
             });
         }
 
-        Ok(Self { url, format, bitrate_kbps })
+        Ok(Self {
+            url,
+            format,
+            bitrate_kbps,
+        })
     }
 }
 
@@ -59,11 +63,7 @@ mod tests {
 
     #[test]
     fn test_valid_command() {
-        let cmd = ExtractAudioCommand::new(
-            "https://youtu.be/dQw4w9WgXcQ",
-            Some("mp3"),
-            Some(192),
-        );
+        let cmd = ExtractAudioCommand::new("https://youtu.be/dQw4w9WgXcQ", Some("mp3"), Some(192));
         assert!(cmd.is_ok());
         let c = cmd.unwrap();
         assert_eq!(c.format, AudioFormat::Mp3);
@@ -72,11 +72,8 @@ mod tests {
 
     #[test]
     fn test_defaults() {
-        let cmd = ExtractAudioCommand::new(
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            None,
-            None,
-        );
+        let cmd =
+            ExtractAudioCommand::new("https://www.youtube.com/watch?v=dQw4w9WgXcQ", None, None);
         assert!(cmd.is_ok());
         let c = cmd.unwrap();
         assert_eq!(c.format, AudioFormat::Mp3);
@@ -91,21 +88,13 @@ mod tests {
 
     #[test]
     fn test_invalid_bitrate() {
-        let cmd = ExtractAudioCommand::new(
-            "https://youtu.be/dQw4w9WgXcQ",
-            None,
-            Some(999),
-        );
+        let cmd = ExtractAudioCommand::new("https://youtu.be/dQw4w9WgXcQ", None, Some(999));
         assert!(matches!(cmd, Err(AppError::InvalidParam { .. })));
     }
 
     #[test]
     fn test_invalid_format() {
-        let cmd = ExtractAudioCommand::new(
-            "https://youtu.be/dQw4w9WgXcQ",
-            Some("wav"),
-            None,
-        );
+        let cmd = ExtractAudioCommand::new("https://youtu.be/dQw4w9WgXcQ", Some("wav"), None);
         assert!(matches!(cmd, Err(AppError::InvalidParam { .. })));
     }
 }

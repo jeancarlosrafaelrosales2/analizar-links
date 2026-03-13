@@ -1,18 +1,14 @@
 //! startup/routes — Wiring de todas las rutas en el Router global.
 
-use axum::{
-    middleware::from_fn,
-    routing::get,
-    Router,
-};
+use axum::{middleware::from_fn, routing::get, Router};
 use std::sync::Arc;
 
 use crate::api::{
     health::{health_handler, ready_handler},
     middleware::request_logging_middleware,
 };
-use crate::AppState;
 use crate::modules::extract::api::routes::extract_routes;
+use crate::AppState;
 
 /// Construye el Router global con todas las rutas.
 pub fn build_router(state: Arc<AppState>) -> Router {

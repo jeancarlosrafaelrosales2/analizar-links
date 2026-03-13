@@ -70,8 +70,10 @@ impl YtDlpDownloader {
             "--extractor-args".to_string(),
             "youtube:player_client=android,web".to_string(),
             // Retry logic
-            "--retries".to_string(), "3".to_string(),
-            "--fragment-retries".to_string(), "3".to_string(),
+            "--retries".to_string(),
+            "3".to_string(),
+            "--fragment-retries".to_string(),
+            "3".to_string(),
         ];
         if let Some(ref browser) = self.browser {
             args.push("--cookies-from-browser".to_string());
@@ -83,23 +85,33 @@ impl YtDlpDownloader {
     /// Convierte errores técnicos de yt-dlp en mensajes amigables para el usuario.
     fn friendly_error(raw: &str) -> String {
         let lower = raw.to_lowercase();
-        if lower.contains("sign in") || lower.contains("bot") || lower.contains("confirm your age") {
-            "Este video requiere verificación de edad o inicio de sesión. Prueba con otro video.".to_string()
+        if lower.contains("sign in") || lower.contains("bot") || lower.contains("confirm your age")
+        {
+            "Este video requiere verificación de edad o inicio de sesión. Prueba con otro video."
+                .to_string()
         } else if lower.contains("private video") || lower.contains("privado") {
             "Este video es privado y no se puede descargar.".to_string()
-        } else if lower.contains("unavailable") || lower.contains("not available") || lower.contains("removed") {
-            "Este video no está disponible. Puede haber sido eliminado o bloqueado en tu región.".to_string()
+        } else if lower.contains("unavailable")
+            || lower.contains("not available")
+            || lower.contains("removed")
+        {
+            "Este video no está disponible. Puede haber sido eliminado o bloqueado en tu región."
+                .to_string()
         } else if lower.contains("copyright") || lower.contains("blocked") {
             "Este video está bloqueado por derechos de autor.".to_string()
         } else if lower.contains("not a youtube url") || lower.contains("unsupported url") {
             "URL no soportada. Por favor usa un link de YouTube válido.".to_string()
-        } else if lower.contains("network") || lower.contains("connection") || lower.contains("timeout") {
+        } else if lower.contains("network")
+            || lower.contains("connection")
+            || lower.contains("timeout")
+        {
             "Error de conexión. Verifica tu internet e intenta de nuevo.".to_string()
         } else if lower.contains("format") || lower.contains("no video formats") {
             "No se encontraron formatos de audio disponibles para este video.".to_string()
         } else {
             // Fallback: no exponer el error técnico completo
-            "No se pudo procesar este video. Verifica que el link sea correcto e intenta de nuevo.".to_string()
+            "No se pudo procesar este video. Verifica que el link sea correcto e intenta de nuevo."
+                .to_string()
         }
     }
 
@@ -151,9 +163,7 @@ impl VideoDownloader for YtDlpDownloader {
                 .find(|l| l.contains("ERROR"))
                 .unwrap_or_else(|| stderr.lines().next().unwrap_or("error desconocido"));
             error!(stderr = %stderr, "yt-dlp metadata failed");
-            return Err(AppError::DownloadFailed(
-                Self::friendly_error(error_line)
-            ));
+            return Err(AppError::DownloadFailed(Self::friendly_error(error_line)));
         }
 
         let json_str = String::from_utf8_lossy(&output.stdout);
@@ -200,22 +210,24 @@ impl VideoDownloader for YtDlpDownloader {
 
         let mut args = vec![
             "-x".to_string(),
-            "--audio-format".to_string(), format_str.to_string(),
-            "--audio-quality".to_string(), "0".to_string(),
-            "--format".to_string(), "bestaudio/best".to_string(),
+            "--audio-format".to_string(),
+            format_str.to_string(),
+            "--audio-quality".to_string(),
+            "0".to_string(),
+            "--format".to_string(),
+            "bestaudio/best".to_string(),
             "--no-part".to_string(),
             "--quiet".to_string(),
             "--no-warnings".to_string(),
             // Descarga 4 fragmentos en paralelo → 2-4x más rápido en videos largos
-            "--concurrent-fragments".to_string(), "4".to_string(),
+            "--concurrent-fragments".to_string(),
+            "4".to_string(),
             // No esperar indefinido en conexiones lentas
-            "--socket-timeout".to_string(), "30".to_string(),
+            "--socket-timeout".to_string(),
+            "30".to_string(),
         ];
         args.extend(self.base_args());
-        args.extend([
-            "-o".to_string(), output_template,
-            url.to_string(),
-        ]);
+        args.extend(["-o".to_string(), output_template, url.to_string()]);
 
         let output = Command::new(&self.ytdlp_path)
             .args(&args)
@@ -238,9 +250,7 @@ impl VideoDownloader for YtDlpDownloader {
                 .lines()
                 .find(|l| l.contains("ERROR"))
                 .unwrap_or_else(|| stderr.lines().next().unwrap_or("error desconocido"));
-            return Err(AppError::DownloadFailed(
-                Self::friendly_error(error_line)
-            ));
+            return Err(AppError::DownloadFailed(Self::friendly_error(error_line)));
         }
 
         // Buscar el archivo descargado en output_dir
@@ -250,9 +260,11 @@ impl VideoDownloader for YtDlpDownloader {
             .await
             .map_err(|e| AppError::StorageFailed(format!("Error leyendo directorio: {}", e)))?;
 
-        while let Some(entry) = dir.next_entry().await.map_err(|e| {
-            AppError::StorageFailed(format!("Error iterando directorio: {}", e))
-        })? {
+        while let Some(entry) = dir
+            .next_entry()
+            .await
+            .map_err(|e| AppError::StorageFailed(format!("Error iterando directorio: {}", e)))?
+        {
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some(ext) {
                 found_path = Some(path.to_string_lossy().to_string());

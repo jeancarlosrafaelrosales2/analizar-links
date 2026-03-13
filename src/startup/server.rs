@@ -4,9 +4,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 
-use crate::api::middleware::{build_cors_layer, RateLimiter, rate_limit_middleware};
-use crate::common::AppConfig;
+use crate::api::middleware::{build_cors_layer, rate_limit_middleware, RateLimiter};
 use crate::common::constants::CLEANUP_INTERVAL_SECS;
+use crate::common::AppConfig;
 use crate::AppState;
 
 use super::cleanup::spawn_cleanup_task;
@@ -26,7 +26,10 @@ pub async fn run_server(
         config.job_ttl_seconds,
         CLEANUP_INTERVAL_SECS,
     );
-    info!("🧹 Cleanup task started (TTL: {}s, interval: {}s)", config.job_ttl_seconds, CLEANUP_INTERVAL_SECS);
+    info!(
+        "🧹 Cleanup task started (TTL: {}s, interval: {}s)",
+        config.job_ttl_seconds, CLEANUP_INTERVAL_SECS
+    );
 
     // Spawn rate limiter cleanup (evict stale IP entries every 5 min)
     let limiter_clone = rate_limiter.clone();
@@ -39,7 +42,10 @@ pub async fn run_server(
     });
 
     let app = build_router(state)
-        .layer(axum::middleware::from_fn_with_state(rate_limiter, rate_limit_middleware))
+        .layer(axum::middleware::from_fn_with_state(
+            rate_limiter,
+            rate_limit_middleware,
+        ))
         .layer(cors);
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;

@@ -1,9 +1,9 @@
 //! domain/ports/job_cache — Port para caché de jobs de extracción.
 
-use async_trait::async_trait;
-use uuid::Uuid;
 use crate::common::AppError;
 use crate::domain::entities::ExtractJob;
+use async_trait::async_trait;
+use uuid::Uuid;
 
 /// Port: Repositorio/caché de jobs de extracción.
 ///

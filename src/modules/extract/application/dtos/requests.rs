@@ -75,7 +75,8 @@ mod tests {
 
     #[test]
     fn test_batch_request_deserialize() {
-        let json = r#"{"urls":["https://youtu.be/a","https://youtu.be/b"],"format":"m4a","bitrate":256}"#;
+        let json =
+            r#"{"urls":["https://youtu.be/a","https://youtu.be/b"],"format":"m4a","bitrate":256}"#;
         let req: BatchExtractRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.urls.len(), 2);
         assert_eq!(req.format, Some("m4a".to_string()));
