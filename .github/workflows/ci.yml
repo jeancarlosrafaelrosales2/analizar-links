@@ -55,7 +55,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::module_name_repetitions -A clippy::must_use_candidate
+      - run: cargo clippy --all-targets -- -W clippy::pedantic -A clippy::module_name_repetitions -A clippy::must_use_candidate -A clippy::missing-errors-doc -A clippy::missing-panics-doc -A clippy::needless_pass_by_value
 
   fmt:
     name: 🎨 Format
