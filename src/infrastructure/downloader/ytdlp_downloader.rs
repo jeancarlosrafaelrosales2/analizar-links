@@ -206,6 +206,10 @@ impl VideoDownloader for YtDlpDownloader {
             "--no-part".to_string(),
             "--quiet".to_string(),
             "--no-warnings".to_string(),
+            // Descarga 4 fragmentos en paralelo → 2-4x más rápido en videos largos
+            "--concurrent-fragments".to_string(), "4".to_string(),
+            // No esperar indefinido en conexiones lentas
+            "--socket-timeout".to_string(), "30".to_string(),
         ];
         args.extend(self.base_args());
         args.extend([
