@@ -30,12 +30,30 @@ use crate::modules::extract::application::queries::GetJobStatusQuery;
 
 // ── Helpers ──────────────────────────────────────────────────
 
-fn get_base_url(headers: &HeaderMap) -> String {
+/// Construye la base URL para URLs de respuesta (poll_url, download_url).
+///
+/// Orden de prioridad:
+/// 1. `PUBLIC_URL` env var via AppState (producción con https://)
+/// 2. `X-Forwarded-Proto` header (Railway/proxy termina TLS y re-emite como http)
+/// 3. Fallback: http://host (desarrollo local)
+fn get_base_url(state: &AppState, headers: &HeaderMap) -> String {
+    // 1. PUBLIC_URL tiene prioridad absoluta
+    if let Some(public_url) = &state.config.public_url {
+        return public_url.clone();
+    }
+
     let host = headers
         .get(header::HOST)
         .and_then(|v| v.to_str().ok())
         .unwrap_or("localhost:3100");
-    format!("http://{}", host)
+
+    // 2. X-Forwarded-Proto detecta si el cliente usó HTTPS (Railway, nginx, etc.)
+    let proto = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("http");
+
+    format!("{}://{}", proto, host)
 }
 
 // ── Handlers ─────────────────────────────────────────────────
@@ -49,7 +67,7 @@ pub async fn submit_extraction_handler(
     _headers: HeaderMap,
     Json(payload): Json<ExtractRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let base_url = get_base_url(&_headers);
+    let base_url = get_base_url(&state, &_headers);
 
     let cmd = ExtractAudioCommand::new(
         &payload.url,
@@ -79,7 +97,7 @@ pub async fn submit_batch_handler(
     headers: HeaderMap,
     Json(payload): Json<BatchExtractRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let base_url = get_base_url(&headers);
+    let base_url = get_base_url(&state, &headers);
 
     let response = state.extract_service
         .submit_batch(
@@ -108,7 +126,7 @@ pub async fn get_job_status_handler(
     Path(job_id): Path<String>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    let base_url = get_base_url(&headers);
+    let base_url = get_base_url(&state, &headers);
     let query = GetJobStatusQuery::new(&job_id)?;
 
     let response = state.extract_service
@@ -126,7 +144,7 @@ pub async fn list_jobs_handler(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    let base_url = get_base_url(&headers);
+    let base_url = get_base_url(&state, &headers);
     let response = state.extract_service.list_jobs(&base_url).await?;
     Ok((StatusCode::OK, Json(ApiResponse::ok(response))))
 }
@@ -141,7 +159,7 @@ pub async fn sse_progress_handler(
     Path(job_id): Path<String>,
     headers: HeaderMap,
 ) -> Result<Sse<impl tokio_stream::Stream<Item = Result<Event, Infallible>>>, AppError> {
-    let base_url = get_base_url(&headers);
+    let base_url = get_base_url(&state, &headers);
     let query = GetJobStatusQuery::new(&job_id)?;
     let uuid = query.job_id;
 
