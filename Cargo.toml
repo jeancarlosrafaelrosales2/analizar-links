@@ -52,7 +52,7 @@ tokio-stream  = "0.1"
 async-trait   = "0.1"
 
 # ── OpenAPI Docs ────────────────────────────────────────────
-utoipa              = { version = "4", features = ["axum_extras", "chrono", "uuid"] }
+utoipa              = { version = "5", features = ["axum_extras", "chrono", "uuid"] }
 
 [features]
 default = []
